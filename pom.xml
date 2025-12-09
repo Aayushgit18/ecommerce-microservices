@@ -5,7 +5,7 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- ⭐ SPRING BOOT 2 PARENT -->
+    <!-- ⭐ SPRING BOOT 2 + Java 8 Parent -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -20,6 +20,7 @@
 
     <name>ecommerce-microservices</name>
 
+    <!-- ⭐ ALL MICROSERVICES MODULES -->
     <modules>
         <module>common-lib</module>
         <module>api-gateway</module>
@@ -39,32 +40,31 @@
         <module>media-service</module>
     </modules>
 
+    <!-- ⭐ GLOBAL PROPERTIES -->
     <properties>
-        <!-- ⭐ Java 8 Compatible -->
         <java.version>1.8</java.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <revision>1.0-SNAPSHOT</revision>
 
-        <!-- ⭐ Spring Cloud Netflix (Last stable version) -->
+        <!-- ⭐ Spring Cloud (Netflix Eureka compatible) -->
         <spring-cloud.version>2021.0.8</spring-cloud.version>
 
-        <!-- Libraries compatible with Java 8 -->
+        <!-- Mapstruct + Lombok (Java 8 versions) -->
         <org.mapstruct.version>1.4.2.Final</org.mapstruct.version>
         <org.lombok.version>1.18.20</org.lombok.version>
         <lombok-mapstruct-binding.version>0.2.0</lombok-mapstruct-binding.version>
 
-        <!-- Swagger 2 works ONLY here -->
+        <!-- Swagger (Spring Boot 2 only) -->
         <springfox.version>3.0.0</springfox.version>
     </properties>
 
-
-    <!-- ⭐ CENTRALIZED version management -->
+    <!-- ⭐ MANAGED GLOBAL DEPENDENCY VERSIONS -->
     <dependencyManagement>
         <dependencies>
 
-            <!-- ⭐ SPRING CLOUD BOM -->
+            <!-- SPRING CLOUD BOM -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -73,71 +73,71 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Mapstruct -->
-            <dependency>
-                <groupId>org.mapstruct</groupId>
-                <artifactId>mapstruct</artifactId>
-                <version>${org.mapstruct.version}</version>
-            </dependency>
-
-            <!-- Lombok -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${org.lombok.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${org.mapstruct.version}</version>
+            </dependency>
+
         </dependencies>
     </dependencyManagement>
 
-    <!-- ⭐ GLOBAL DEPS SHARED BY MODULES -->
+    <!-- ⭐ GLOBAL DEPENDENCIES used by child modules -->
     <dependencies>
 
-        <!-- ⭐ Spring Boot Web (Servlet based) -->
+        <!-- Web (Servlet based, uses javax.*) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- ⭐ Spring Webflux (Optional, Remove if not required) -->
+        <!-- REMOVE WEBFLUX (Not required & causes conflicts on Java 8) -->
+        <!--
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
         </dependency>
+        -->
 
-        <!-- ⭐ Spring Cloud Netflix Eureka / Config -->
+        <!-- Netflix Eureka -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
 
-        <!-- ⭐ Kafka -->
+        <!-- Kafka -->
         <dependency>
             <groupId>org.springframework.kafka</groupId>
             <artifactId>spring-kafka</artifactId>
         </dependency>
 
-        <!-- ⭐ Lombok -->
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
 
-        <!-- ⭐ Mapstruct -->
+        <!-- Mapstruct -->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
         </dependency>
 
-        <!-- ⭐ Swagger (Spring Boot 2 compatible) -->
+        <!-- Swagger 2 (Spring Boot 2 only) -->
         <dependency>
             <groupId>io.springfox</groupId>
             <artifactId>springfox-boot-starter</artifactId>
             <version>${springfox.version}</version>
         </dependency>
 
-        <!-- ⭐ Servlet API (javax.* needed for Boot 2) -->
+        <!-- javax.servlet + javax.* support -->
         <dependency>
             <groupId>javax.servlet</groupId>
             <artifactId>javax.servlet-api</artifactId>
@@ -151,7 +151,7 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Test -->
+        <!-- Unit Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
@@ -160,8 +160,7 @@
 
     </dependencies>
 
-
-    <!-- ⭐ Build plugins -->
+    <!-- ⭐ Build Plugins -->
     <build>
         <pluginManagement>
             <plugins>
@@ -172,31 +171,27 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                 </plugin>
 
-                <!-- Annotation processors -->
+                <!-- Compiler Plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <configuration>
                         <annotationProcessorPaths>
-
                             <path>
                                 <groupId>org.mapstruct</groupId>
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>${org.mapstruct.version}</version>
                             </path>
-
                             <path>
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok</artifactId>
                                 <version>${org.lombok.version}</version>
                             </path>
-
                             <path>
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok-mapstruct-binding</artifactId>
                                 <version>${lombok-mapstruct-binding.version}</version>
                             </path>
-
                         </annotationProcessorPaths>
                     </configuration>
                 </plugin>
