@@ -1,0 +1,15 @@
+# search-service/k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: search-service
+  namespace: ecommerce
+spec:
+  type: NodePort
+  selector:
+    app: search-service
+  ports:
+    - port: 8092
+      targetPort: 8092
+      nodePort: 30093
+

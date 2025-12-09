@@ -1,0 +1,15 @@
+# product-service/k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-service
+  namespace: ecommerce
+spec:
+  type: NodePort
+  selector:
+    app: product-service
+  ports:
+    - port: 8086
+      targetPort: 8086
+      nodePort: 30087
+

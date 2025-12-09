@@ -1,0 +1,44 @@
+# tax-service/k8s/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tax-service
+  namespace: ecommerce
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tax-service
+  template:
+    metadata:
+      labels:
+        app: tax-service
+    spec:
+      containers:
+        - name: tax-service
+          image: ayush/tax-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8091
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: jdbc:postgresql://postgres.ecommerce.svc.cluster.local:5432/taxdb
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-user
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: postgres-password
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+            - name: EUREKA_CLIENT_SERVICEURL_DEFAULTZONE
+              value: http://discovery-service.ecommerce.svc.cluster.local:8761/eureka
+            - name: SPRING_KAFKA_BOOTSTRAP_SERVERS
+              value: kafka.ecommerce.svc.cluster.local:9092
+            - name: SPRING_ZIPKIN_BASE_URL
+              value: http://zipkin.ecommerce.svc.cluster.local:9411
+

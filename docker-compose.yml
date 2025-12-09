@@ -1,205 +1,178 @@
-version: '3.9'
+version: "3.9"
 
 services:
-  #mysql
-  mysql:
-    image: mysql
+
+  # -------------------------
+  # PostgreSQL (all databases)
+  # -------------------------
+  postgres:
+    image: postgres:15
+    container_name: postgres
     environment:
-      MYSQL_ROOT_PASSWORD: 12042003
-      MYSQL_DATABASE: my_database
-      MYSQL_USER: root
-      MYSQL_PASSWORD: 12042003
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
     ports:
-      - "3306:3306"
+      - "5432:5432"
     networks:
-      - ecommerce-network
+      - ecom-net
 
-  #mongodb
-  mongodb:
-    image: mongo
-    volumes:
-      - ./mongo_data:/data/db
-    ports:
-      - "27017:27017"
-    networks:
-      - ecommerce-network
-
-  #zookeeper
+  # -------------------------
+  # Zookeeper + Kafka
+  # -------------------------
   zookeeper:
-    image: confluentinc/cp-zookeeper:7.4.3
-    hostname: zookeeper
-    container_name: zookeeper
+    image: bitnami/zookeeper:3.9
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
     ports:
       - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
     networks:
-      - ecommerce-network
+      - ecom-net
 
-  #broker
-  broker:
-    image: confluentinc/cp-server:7.4.3
-    hostname: broker
-    container_name: broker
-    depends_on:
-      - zookeeper
+  kafka:
+    image: bitnami/kafka:3.7
+    environment:
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
     ports:
       - "9092:9092"
-      - "9101:9101"
-    environment:
-      KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_METRIC_REPORTERS: io.confluent.metrics.reporter.ConfluentMetricsReporter
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_JMX_PORT: 9101
-      KAFKA_JMX_HOSTNAME: localhost
-      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: broker:29092
-      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
-      CONFLUENT_METRICS_ENABLE: 'true'
-      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
-    networks:
-      - ecommerce-network
-
-  #control-center
-  control-center:
-    image: confluentinc/cp-enterprise-control-center:7.4.3
-    hostname: control-center
-    container_name: control-center
     depends_on:
-      - broker
-    ports:
-      - "9021:9021"
-    environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'broker:29092'
-      CONTROL_CENTER_CONNECT_CONNECT-DEFAULT_CLUSTER: 'connect:8083'
-      CONTROL_CENTER_KSQL_KSQLDB1_URL: "http://ksqldb-server:8088"
-      CONTROL_CENTER_KSQL_KSQLDB1_ADVERTISED_URL: "http://localhost:8088"
-      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8081"
-      CONTROL_CENTER_REPLICATION_FACTOR: 1
-      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      PORT: 9021
+      - zookeeper
     networks:
-      - ecommerce-network
+      - ecom-net
 
-  ###########################
-  #setup
-  #elasticsearch
-  #logstash
-  #kibana
-  ###########################
-  setup:
-    profiles:
-      - setup
-    build:
-      context: ./docker/setup/
-      args:
-        ELASTIC_VERSION: ${ELASTIC_VERSION}
-    container_name: setup
-    init: true
-    volumes:
-      - ./docker/setup/entrypoint.sh:/entrypoint.sh:ro,Z
-      - ./docker/setup/lib.sh:/lib.sh:ro,Z
-      - ./docker/setup/roles:/roles:ro,Z
-    environment:
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
-      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
-      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
-      METRICBEAT_INTERNAL_PASSWORD: ${METRICBEAT_INTERNAL_PASSWORD:-}
-      FILEBEAT_INTERNAL_PASSWORD: ${FILEBEAT_INTERNAL_PASSWORD:-}
-      HEARTBEAT_INTERNAL_PASSWORD: ${HEARTBEAT_INTERNAL_PASSWORD:-}
-      MONITORING_INTERNAL_PASSWORD: ${MONITORING_INTERNAL_PASSWORD:-}
-      BEATS_SYSTEM_PASSWORD: ${BEATS_SYSTEM_PASSWORD:-}
-    depends_on:
-      - elasticsearch
-    networks:
-      - ecommerce-network
-
-  #elasticsearch
+  # -------------------------
+  # Elasticsearch
+  # -------------------------
   elasticsearch:
-    build:
-      context: ./docker/elasticsearch/
-      args:
-        ELASTIC_VERSION: ${ELASTIC_VERSION}
-    container_name: elasticsearch
-    volumes:
-      - ./docker/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro,Z
-      - elasticsearch:/usr/share/elasticsearch/data:Z
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.14.0
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
     ports:
       - "9200:9200"
-      - "9300:9300"
-    environment:
-      node.name: elasticsearch
-      ES_JAVA_OPTS: -Xms512m -Xmx512m
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD:-}
-      discovery.type: single-node
-    restart: unless-stopped
     networks:
-      - ecommerce-network
+      - ecom-net
 
-  #logstash
-  logstash:
-    build:
-      context: ./docker/logstash/
-      args:
-        ELASTIC_VERSION: ${ELASTIC_VERSION}
-    container_name: logstash
-    volumes:
-      - ./docker/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro,Z
-      - ./docker/logstash/pipeline:/usr/share/logstash/pipeline:ro,Z
+  # -------------------------
+  # Zipkin
+  # -------------------------
+  zipkin:
+    image: openzipkin/zipkin:2.24
     ports:
-      - "5044:5044"
-      - "50000:50000/tcp"
-      - "50000:50000/udp"
-      - "9600:9600"
-    environment:
-      LS_JAVA_OPTS: -Xms256m -Xmx256m
-      LOGSTASH_INTERNAL_PASSWORD: ${LOGSTASH_INTERNAL_PASSWORD:-}
-    depends_on:
-      - elasticsearch
-    restart: unless-stopped
+      - "9411:9411"
     networks:
-      - ecommerce-network
+      - ecom-net
 
-  #kibana
-  kibana:
-    build:
-      context: ./docker/kibana/
-      args:
-        ELASTIC_VERSION: ${ELASTIC_VERSION}
-    container_name: kibana
-    volumes:
-      - ./docker/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro,Z
+  # -------------------------
+  # DISCOVERY SERVICE
+  # -------------------------
+  discovery-service:
+    image: ayush/discovery-service:latest
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
     ports:
-      - "5601:5601"
-    environment:
-      KIBANA_SYSTEM_PASSWORD: ${KIBANA_SYSTEM_PASSWORD:-}
-    depends_on:
-      - elasticsearch
-    restart: unless-stopped
+      - "8761:8761"
     networks:
-      - ecommerce-network
+      - ecom-net
 
-# networks:
+  # -------------------------
+  # API GATEWAY
+  # -------------------------
+  api-gateway:
+    image: ayush/api-gateway:latest
+    depends_on:
+      - discovery-service
+      - kafka
+      - zipkin
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    networks:
+      - ecom-net
+
+  # -------------------------
+  # USER SERVICE
+  # -------------------------
+  user-service:
+    image: ayush/user-service:latest
+    depends_on:
+      - postgres
+      - discovery-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/userdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8088:8088"
+    networks:
+      - ecom-net
+
+  # -------------------------
+  # PRODUCT SERVICE
+  # -------------------------
+  product-service:
+    image: ayush/product-service:latest
+    depends_on:
+      - postgres
+      - discovery-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/productdb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8086:8086"
+    networks:
+      - ecom-net
+
+  # -------------------------
+  # INVENTORY SERVICE
+  # -------------------------
+  inventory-service:
+    image: ayush/inventory-service:latest
+    depends_on:
+      - postgres
+      - discovery-service
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inventorydb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: password
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      ZIPKIN_BASE_URL: http://zipkin:9411
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8082:8082"
+    networks:
+      - ecom-net
+
+  # ➕ Remaining microservices follow SAME PATTERN:
+  #
+  # favourite-service: 8081
+  # media-service: 8083
+  # notification-service: 8083
+  # order-service: 8084
+  # payment-service: 8085
+  # shipping-service: 8087
+  # rating-service: 8089
+  # promotion-service: 8092
+  # tax-service: 8091
+  # search-service: 8092 (also needs elasticsearch)
+
 networks:
-  ecommerce-network:
+  ecom-net:
     driver: bridge
-    name: ecommerce-network
-    external: true
-#  proxy:
-#    external: true
-#  keycloak:
 
-# volumes:
-volumes:
-  elasticsearch:

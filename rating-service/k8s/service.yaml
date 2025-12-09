@@ -1,0 +1,15 @@
+# rating-service/k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rating-service
+  namespace: ecommerce
+spec:
+  type: NodePort
+  selector:
+    app: rating-service
+  ports:
+    - port: 8089
+      targetPort: 8089
+      nodePort: 30090
+

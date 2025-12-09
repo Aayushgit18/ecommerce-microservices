@@ -1,0 +1,15 @@
+# tax-service/k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: tax-service
+  namespace: ecommerce
+spec:
+  type: NodePort
+  selector:
+    app: tax-service
+  ports:
+    - port: 8091
+      targetPort: 8091
+      nodePort: 30092
+

@@ -1,0 +1,110 @@
+namespace: ecommerce
+
+global:
+  imagePullPolicy: IfNotPresent
+  postgres:
+    host: postgres
+    port: 5432
+    username: postgres
+    password: password
+  kafka:
+    bootstrapServers: kafka:9092
+  eureka:
+    url: http://discovery-service:8761/eureka
+  zipkin:
+    url: http://zipkin:9411
+  elasticsearch:
+    url: http://elasticsearch:9200
+
+services:
+  api-gateway:
+    enabled: true
+    image: ayush/api-gateway:latest
+    port: 8080
+    nodePort: 30080
+    db: null
+  discovery-service:
+    enabled: true
+    image: ayush/discovery-service:latest
+    port: 8761
+    nodePort: 30061
+    db: null
+  user-service:
+    enabled: true
+    image: ayush/user-service:latest
+    port: 8088
+    nodePort: 30089
+    db: userdb
+  product-service:
+    enabled: true
+    image: ayush/product-service:latest
+    port: 8086
+    nodePort: 30087
+    db: productdb
+  inventory-service:
+    enabled: true
+    image: ayush/inventory-service:latest
+    port: 8082
+    nodePort: 30082
+    db: inventorydb
+  media-service:
+    enabled: true
+    image: ayush/media-service:latest
+    port: 8083
+    nodePort: 30083
+    db: mediadb
+  notification-service:
+    enabled: true
+    image: ayush/notification-service:latest
+    port: 8083
+    nodePort: 30084
+    db: notifdb
+  order-service:
+    enabled: true
+    image: ayush/order-service:latest
+    port: 8084
+    nodePort: 30085
+    db: orderdb
+  payment-service:
+    enabled: true
+    image: ayush/payment-service:latest
+    port: 8085
+    nodePort: 30086
+    db: paymentdb
+  shipping-service:
+    enabled: true
+    image: ayush/shipping-service:latest
+    port: 8087
+    nodePort: 30088
+    db: shippingdb
+  favourite-service:
+    enabled: true
+    image: ayush/favourite-service:latest
+    port: 8081
+    nodePort: 30081
+    db: favouritedb
+  rating-service:
+    enabled: true
+    image: ayush/rating-service:latest
+    port: 8089
+    nodePort: 30090
+    db: ratingdb
+  promotion-service:
+    enabled: true
+    image: ayush/promotion-service:latest
+    port: 8092
+    nodePort: 30091
+    db: promotiondb
+  tax-service:
+    enabled: true
+    image: ayush/tax-service:latest
+    port: 8091
+    nodePort: 30092
+    db: taxdb
+  search-service:
+    enabled: true
+    image: ayush/search-service:latest
+    port: 8092
+    nodePort: 30093
+    db: searchdb
+

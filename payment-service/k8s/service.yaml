@@ -1,0 +1,15 @@
+# payment-service/k8s/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: payment-service
+  namespace: ecommerce
+spec:
+  type: NodePort
+  selector:
+    app: payment-service
+  ports:
+    - port: 8085
+      targetPort: 8085
+      nodePort: 30086
+
